@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPC1 Tra cứu Giá trúng thầu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/x-icon" href="css/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="css/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="css/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="css/apple-touch-icon.png">
+    <link rel="manifest" href="css/site.webmanifest">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header__inner">
+            <div class="header__brand">
+                <img src="css/cpc1-logo-200.png" alt="CPC1 Logo" class="header__logo">
+                <div class="header__brand-text">
+                    <h1 class="header__title">CPC1 Tra cứu Giá trúng thầu</h1>
+                    <p class="header__subtitle">Dữ liệu mới nhất từ Mua sắm công QG</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout layout--single">
+        <main class="main">
+            <!-- Top Horizontal Filter Card -->
+            <div id="filter-panel" class="filter-card">
+                <div class="filter-card__header">
+                    <h2 class="filter-card__title">🔍 Bộ lọc tìm kiếm</h2>
+                </div>
+                <div class="filter-card__body">
+                    <!-- Row 1: Keyword (always visible) -->
+                    <div class="filter-grid filter-grid--top">
+                        <div class="form-group form-group--keyword">
+                            <label for="search-keyword" class="form-label">Từ khóa tìm kiếm</label>
+                            <input type="text" id="search-keyword" class="form-input" placeholder="Nhập tên thuốc, tên hoạt chất, số GĐKLH hoặc GPNK...">
+                        </div>
+
+                        <div class="form-group form-group--minqty">
+                            <label for="min-quantity" class="form-label">Số lượng lớn hơn</label>
+                            <input type="number" id="min-quantity" class="form-input" placeholder="VD: 100" min="0" step="1">
+                        </div>
+                        
+                        <div class="form-group mobile-hidden">
+                            <label for="bid-form-select" class="form-label">Hình thức LCNT</label>
+                            <select id="bid-form-select" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                <option value="DTRR">Đấu thầu rộng rãi</option>
+                                <option value="DTHC">Đấu thầu hạn chế</option>
+                                <option value="CHCT">Chào hàng cạnh tranh</option>
+                                <option value="CHCTRG">Chào hàng cạnh tranh rút gọn</option>
+                                <option value="CDT">Chỉ định thầu</option>
+                                <option value="CDTRG">Chỉ định thầu rút gọn</option>
+                                <option value="MSTT">Mua sắm trực tiếp</option>
+                                <option value="CGTT">Chào giá trực tuyến</option>
+                                <option value="DPG">Đàm phán giá</option>
+                                <option value="ESHOP">Mua sắm trực tuyến</option>
+                                <option value="DH">Đặt hàng</option>
+                                <option value="GNV">Giao nhiệm vụ</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mobile-hidden">
+                            <label for="match-type" class="form-label">Kiểu khớp</label>
+                            <select id="match-type" class="form-select">
+                                <option value="all-1">Khớp tất cả từ</option>
+                                <option value="any-1">Khớp từ hoặc 1 số từ</option>
+                                <option value="exact">Chính xác cụm từ</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group hidden" id="medicine-type-group">
+                            <label for="medicine-type-select" class="form-label">Loại dược liệu</label>
+                            <select id="medicine-type-select" class="form-select">
+                                <option value="0">Tất cả</option>
+                                <option value="1">Sản phẩm từ dược liệu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Advanced filters (hidden on mobile by default) -->
+                    <div class="filter-grid filter-grid--bottom mobile-advanced-filters" id="advanced-filters">
+                        <div class="form-group">
+                            <label class="form-label">Ngày đăng tải KQLCNT</label>
+                            <div class="form-row">
+                                <input type="text" id="date-from" class="form-input date-mask" placeholder="dd/mm/yyyy" maxlength="10">
+                                <span class="form-separator">-</span>
+                                <input type="text" id="date-to" class="form-input date-mask" placeholder="dd/mm/yyyy" maxlength="10">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Ngày quyết định</label>
+                            <div class="form-row">
+                                <input type="text" id="decision-date-from" class="form-input date-mask" placeholder="dd/mm/yyyy" maxlength="10">
+                                <span class="form-separator">-</span>
+                                <input type="text" id="decision-date-to" class="form-input date-mask" placeholder="dd/mm/yyyy" maxlength="10">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="decision-number" class="form-label">Số quyết định</label>
+                            <input type="text" id="decision-number" class="form-input" placeholder="Số QĐ phê duyệt...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="investor" class="form-label">Chủ đầu tư / Bên mời thầu</label>
+                            <input type="text" id="investor" class="form-input" placeholder="Tên chủ đầu tư...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contractor" class="form-label">Nhà thầu trúng thầu</label>
+                            <input type="text" id="contractor" class="form-input" placeholder="Tên nhà thầu...">
+                        </div>
+                    </div>
+
+                    <!-- Mobile: toggle advanced filters -->
+                    <button id="btn-toggle-advanced" class="btn-toggle-advanced mobile-only" onclick="toggleAdvancedFilters()">
+                        ⚙️ Bộ lọc nâng cao ▼
+                    </button>
+                </div>
+
+                <div class="filter-card__footer">
+                    <button id="btn-search" class="btn btn--primary btn--lg">🔍 Tìm kiếm</button>
+                    <button id="btn-reset" class="btn btn--secondary">🔄 Xóa bộ lọc</button>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab tab--active" data-tab="GENERIC" id="tab-generic">Thuốc Generic</button>
+                <button class="tab" data-tab="BRANDED" id="tab-branded">Thuốc Biệt dược gốc</button>
+                <button class="tab" data-tab="HERBAL_DRUG" id="tab-herbal-drug">Thuốc Dược liệu</button>
+                <button class="tab" data-tab="DUOC_LIEU" id="tab-duoclieu">Dược liệu</button>
+                <button class="tab" data-tab="VI_THUOC" id="tab-vithuoc">Vị thuốc cổ truyền</button>
+                <button class="tab" data-tab="TBYT" id="tab-tbyt">TB, VT y tế</button>
+            </div>
+
+            <div id="stats-bar" class="stats-bar hidden">
+                <div class="stats-bar__item">
+                    <span>Tổng số: </span><strong id="total-results">0</strong>
+                </div>
+                <div class="stats-bar__item stats-bar__controls">
+                    <button id="btn-export-excel" class="btn btn--excel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Xuất Excel (.xlsx)</span>
+                    </button>
+                    <select id="page-size-select" class="form-select page-size-select">
+                        <option value="10">10 / trang</option>
+                        <option value="20" selected>20 / trang</option>
+                        <option value="50">50 / trang</option>
+                        <option value="100">100 / trang</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="table-wrapper" class="table-wrapper hidden">
+                <table class="table">
+                    <thead id="results-table-head">
+                        <!-- Dynamic generated -->
+                    </thead>
+                    <tbody id="results-table-body">
+                        <!-- Dynamic generated -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="results-cards" class="cards-container">
+                <!-- Mobile cards generated here -->
+            </div>
+
+            <div id="loading-overlay" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+            </div>
+
+            <div id="empty-state" class="empty-state">
+                <p style="font-size: 1.05rem; font-weight: 500; color: #64748b;">🔍 Vui lòng nhập từ khóa hoặc chọn bộ lọc và nhấn <strong>"Tìm kiếm"</strong> để xem kết quả.</p>
+            </div>
+
+            <div id="error-state" class="error-state hidden">
+                <h3 id="error-title">Đã xảy ra lỗi</h3>
+                <p id="error-desc">Không thể kết nối đến máy chủ.</p>
+                <button id="btn-retry" class="btn btn--primary">Thử lại</button>
+            </div>
+
+            <div id="pagination" class="pagination">
+                <!-- Pagination elements generated here -->
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>Dữ liệu được lấy từ Hệ thống mạng đấu thầu quốc gia.</p>
+        <p style="margin-top: 6px; font-size: 0.82rem; opacity: 0.75;">Thiết kế bởi <strong>Nguyễn Văn Dũng</strong> ❤️ 0978.777.191</p>
+    </footer>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        function toggleAdvancedFilters() {
+            const panel = document.getElementById('advanced-filters');
+            const btn = document.getElementById('btn-toggle-advanced');
+            const isExpanded = panel.classList.contains('expanded');
+            if (isExpanded) {
+                panel.classList.remove('expanded');
+                btn.textContent = '⚙️ Bộ lọc nâng cao ▼';
+                btn.classList.remove('active');
+            } else {
+                panel.classList.add('expanded');
+                btn.textContent = '⚙️ Bộ lọc nâng cao ▲';
+                btn.classList.add('active');
+            }
+        }
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>
