@@ -26,7 +26,7 @@ except Exception:
     pass
 
 # ===== CẤU HÌNH =====
-PORT = 8080
+PORT = int(os.environ.get('PORT', 8080))
 TARGET_HOST = 'https://muasamcong.mpi.gov.vn'
 STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -48,6 +48,19 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         """Xử lý preflight CORS request"""
         self.send_response(200)
         self.end_headers()
+
+    def do_GET(self):
+        """Serve static files; handle special browser requests gracefully"""
+        # Redirect root favicon request to css/favicon.ico
+        if self.path == '/favicon.ico':
+            self.path = '/css/favicon.ico'
+        # Silently return 404 for Chrome DevTools / well-known probes
+        if self.path.startswith('/.well-known/') or self.path.startswith('/socket.io'):
+            self.send_response(404)
+            self.end_headers()
+            return
+        # Fall through to default static file serving
+        super().do_GET()
 
     def do_POST(self):
         """Proxy POST requests đến muasamcong.mpi.gov.vn"""
@@ -131,6 +144,14 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         else:
             print(f"  [STATIC] {args[0]}")
 
+    def handle_error(self, request, client_address):
+        """Suppress harmless connection errors (browser closed tab/navigated away)"""
+        import sys
+        exc_type = sys.exc_info()[0]
+        if exc_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            return  # Ignore — browser just closed the connection early
+        super().handle_error(request, client_address)
+
 
 def main():
     print("=" * 56)
@@ -142,7 +163,7 @@ def main():
     print("=" * 56)
     print("  Nhan Ctrl+C de dung server\n")
 
-    server = http.server.HTTPServer(('', PORT), ProxyHandler)
+    server = http.server.ThreadingHTTPServer(('', PORT), ProxyHandler)
     
     try:
         server.serve_forever()

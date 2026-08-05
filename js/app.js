@@ -80,7 +80,8 @@ const TAB_CONFIG = {
             {key: 'soQuyetDinh', label: 'Số quyết định'},
             {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
             {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
-            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'}
+            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
+            {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
     },
     'GENERIC': {
@@ -112,7 +113,8 @@ const TAB_CONFIG = {
             {key: 'soQuyetDinh', label: 'Số quyết định'},
             {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
             {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
-            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'}
+            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
+            {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
     },
     'BRANDED': {
@@ -159,7 +161,8 @@ const TAB_CONFIG = {
             {key: 'soQuyetDinh', label: 'Số quyết định'},
             {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
             {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
-            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'}
+            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
+            {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
     },
     'VI_THUOC': {
@@ -190,7 +193,8 @@ const TAB_CONFIG = {
             {key: 'soQuyetDinh', label: 'Số quyết định'},
             {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
             {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
-            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'}
+            {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
+            {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
     }
 };
