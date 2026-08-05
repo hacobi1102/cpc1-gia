@@ -70,12 +70,8 @@
                         </div>
 
                         <div class="form-group mobile-hidden">
-                            <label for="match-type" class="form-label">Kiểu khớp</label>
-                            <select id="match-type" class="form-select">
-                                <option value="all-1">Khớp tất cả từ</option>
-                                <option value="any-1">Khớp từ hoặc 1 số từ</option>
-                                <option value="exact">Chính xác cụm từ</option>
-                            </select>
+                            <label for="contractor" class="form-label">Nhà thầu trúng thầu</label>
+                            <input type="text" id="contractor" class="form-input" placeholder="VD: trung ương cpc1">
                         </div>
 
                         <div class="form-group hidden" id="medicine-type-group">
@@ -89,6 +85,10 @@
 
                     <!-- Row 2: Advanced filters (hidden on mobile by default) -->
                     <div class="filter-grid filter-grid--bottom mobile-advanced-filters" id="advanced-filters">
+                        <div class="form-group desktop-hidden">
+                            <label for="contractor-mobile" class="form-label">Nhà thầu trúng thầu</label>
+                            <input type="text" id="contractor-mobile" class="form-input" placeholder="VD: trung ương cpc1">
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Ngày đăng tải KQLCNT</label>
                             <div class="form-row">
@@ -118,8 +118,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="contractor" class="form-label">Nhà thầu trúng thầu</label>
-                            <input type="text" id="contractor" class="form-input" placeholder="Tên nhà thầu...">
+                            <label for="match-type" class="form-label">Kiểu khớp</label>
+                            <select id="match-type" class="form-select">
+                                <option value="all-1">Khớp tất cả từ</option>
+                                <option value="any-1">Khớp từ hoặc 1 số từ</option>
+                                <option value="exact">Chính xác cụm từ</option>
+                            </select>
                         </div>
                     </div>
 

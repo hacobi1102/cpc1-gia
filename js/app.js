@@ -347,7 +347,7 @@ function buildQuery() {
     const keyword = $('search-keyword')?.value?.trim() || '';
     const matchType = $('match-type')?.value || 'all-1';
     const investor = $('investor')?.value?.trim() || '';
-    const contractor = $('contractor')?.value?.trim() || '';
+    const contractor = $('contractor')?.value?.trim() || $('contractor-mobile')?.value?.trim() || '';
     const decisionNum = $('decision-number')?.value?.trim() || '';
 
     // Main keyword query
@@ -659,6 +659,7 @@ function resetFilters() {
     $('decision-number').value = '';
     $('investor').value = '';
     $('contractor').value = '';
+    if ($('contractor-mobile')) $('contractor-mobile').value = '';
     $('medicine-type-select').value = '0';
     const minQtyEl = $('min-quantity');
     if (minQtyEl) minQtyEl.value = '';

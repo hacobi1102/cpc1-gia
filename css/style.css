@@ -37,6 +37,7 @@ body {
 
 /* Utilities */
 .hidden { display: none !important; }
+.desktop-hidden { display: none; }
 
 /* Header */
 .header {
@@ -551,6 +552,9 @@ body {
     /* Mobile filter: hide advanced fields by default */
     .mobile-hidden {
         display: none !important;
+    }
+    .desktop-hidden {
+        display: block !important;
     }
     .mobile-advanced-filters {
         display: none !important;
