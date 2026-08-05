@@ -750,6 +750,29 @@ async function fetchCategories() {
     }
 }
 
+// Validation: require at least one input before searching
+function validateHasInput() {
+    const keyword   = $('search-keyword')?.value?.trim();
+    const contractor= $('contractor')?.value?.trim() || $('contractor-mobile')?.value?.trim();
+    const investor  = $('investor')?.value?.trim();
+    const decNum    = $('decision-number')?.value?.trim();
+    const dateFrom  = $('date-from')?.value?.trim();
+    const dateTo    = $('date-to')?.value?.trim();
+    const minQty    = $('min-quantity')?.value?.trim();
+
+    if (keyword || contractor || investor || decNum || dateFrom || dateTo || minQty) {
+        return true;
+    }
+
+    // Show warning in empty-state
+    const emptyState = $('empty-state');
+    emptyState.innerHTML = '<p style="font-size:1rem;font-weight:500;color:#e53e3e;">⚠️ Vui lòng nhập ít nhất một tiêu chí tìm kiếm (từ khóa, ngày, nhà thầu...) trước khi tìm kiếm.</p>';
+    emptyState.classList.remove('hidden');
+    $('table-wrapper').classList.add('hidden');
+    $('stats-bar').classList.add('hidden');
+    return false;
+}
+
 // Initialization
 function init() {
     // 1. Copy columns to BRANDED & HERBAL_DRUG configs
@@ -764,6 +787,7 @@ function init() {
     });
 
     $('btn-search').addEventListener('click', () => {
+        if (!validateHasInput()) return;
         state.pageNumber = 0;
         performSearch();
     });
@@ -813,6 +837,7 @@ function init() {
 
     $('search-keyword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
+            if (!validateHasInput()) return;
             state.pageNumber = 0;
             performSearch();
         }
@@ -830,6 +855,14 @@ function init() {
     } else {
         medGroup.classList.add('hidden');
     }
+    // 4. Set default date range: 1 year ago → today
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    const pad = n => String(n).padStart(2, '0');
+    $('date-from').value = `${pad(oneYearAgo.getDate())}/${pad(oneYearAgo.getMonth()+1)}/${oneYearAgo.getFullYear()}`;
+    $('date-to').value = `${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
+
     fetchCategories();
 }
 
