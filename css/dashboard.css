@@ -687,6 +687,35 @@ body {
   .ddetail__close { display: block; }
   .dfilter__row { flex-direction: column; align-items: stretch; }
   .dfilter__select { min-width: auto; }
+
+  /* Tabs: cuộn ngang thay vì tràn khung */
+  .dtabs {
+    flex-wrap: wrap;
+    padding: 6px 8px 0;
+    gap: 4px;
+  }
+  .dtabs__left {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge */
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .dtabs__left::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+  .dtabs__right {
+    flex: 1 1 100%;
+    padding-bottom: 6px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .dtab {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }
 
 /* ===== FOOTER ===== */
