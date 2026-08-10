@@ -45,7 +45,7 @@ const TAB_BADGE = {
 
 let state = {
     mode: 'browse',
-    tab: 'tbmt',
+    tab: 'cgtt',
     page: 0,
     pageSize: 20,
     totalElements: 0,
@@ -66,8 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
     initMedicineCats();
     initTabs();
     initFilters();
+    initFlatpickr();
     doBrowse();
 });
+
+// Flatpickr instances (to allow programmatic clear)
+let fpFrom = null, fpTo = null;
+
+function initFlatpickr() {
+    if (typeof flatpickr === 'undefined') return;
+    const vnLocale = {
+        firstDayOfWeek: 1,
+        weekdays: {
+            shorthand: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+            longhand: ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+        },
+        months: {
+            shorthand: ['Th.1','Th.2','Th.3','Th.4','Th.5','Th.6','Th.7','Th.8','Th.9','Th.10','Th.11','Th.12'],
+            longhand: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12']
+        },
+        rangeSeparator: ' đến ',
+        scrollTitle: 'Cuộn để thay đổi',
+        toggleTitle: 'Nhấn để chuyển đổi'
+    };
+    const commonOpts = { dateFormat: 'd/m/Y', allowInput: true, locale: vnLocale, showMonths: 1 };
+    fpFrom = flatpickr($('d-date-from'), commonOpts);
+    fpTo   = flatpickr($('d-date-to'),   commonOpts);
+}
 
 function initMedicineCats() {
     const sel = $('d-medicine-cat');
@@ -119,9 +144,15 @@ function initFilters() {
     $('d-keyword').addEventListener('keydown', e => { if (e.key === 'Enter') $('d-btn-search').click(); });
     $('d-btn-clear').addEventListener('click', () => {
         $('d-keyword').value = '';
+        if (fpFrom) fpFrom.clear(); else $('d-date-from').value = '';
+        if (fpTo)   fpTo.clear();   else $('d-date-to').value = '';
         exitSearchMode();
         state.page = 0;
         doBrowse();
+    });
+    $('d-search-apply').addEventListener('click', () => {
+        const kw = $('d-keyword').value.trim();
+        if (kw) { state.page = 0; doGlobalSearch(kw); }
     });
     $('d-pagesize').addEventListener('change', () => {
         state.pageSize = parseInt($('d-pagesize').value);
@@ -136,10 +167,14 @@ function initFilters() {
 
 function enterSearchMode(keyword) {
     state.mode = 'search';
+    // Clear detail panel cũ
+    hideDetail();
+    state.selectedItem = null;
     const banner = $('d-search-banner');
     if (banner) { banner.textContent = '🔍 Tìm kiếm: "' + keyword + '" — trên tất cả TBMT · KHLCNT · KQLCNT · CGTT'; banner.classList.remove('hidden'); }
     $('d-btn-clear').classList.remove('hidden');
     $('d-filter-dropdowns').classList.add('hidden');
+    $('d-search-filters').classList.remove('hidden');
     const tabs = document.querySelector('.dtabs');
     if (tabs) tabs.classList.add('dtabs--search');
 }
@@ -148,6 +183,7 @@ function exitSearchMode() {
     state.mode = 'browse';
     const banner = $('d-search-banner');
     if (banner) banner.classList.add('hidden');
+    $('d-search-filters').classList.add('hidden');
     $('d-btn-clear').classList.add('hidden');
     $('d-filter-dropdowns').classList.remove('hidden');
     const tabs = document.querySelector('.dtabs');
@@ -155,44 +191,73 @@ function exitSearchMode() {
     restoreTabFilters(state.tab);
 }
 
+function parseFpDate(val) {
+    // flatpickr gives 'dd/mm/yyyy', API needs 'yyyy-mm-dd'
+    if (!val) return '';
+    const parts = val.split('/');
+    if (parts.length !== 3) return '';
+    return parts[2] + '-' + parts[1] + '-' + parts[0];
+}
+
+function getSearchFilters() {
+    const filters = [
+        { fieldName: 'type', searchType: 'in', fieldValues: ['es-notify-contractor','es-plan-project-p'] },
+        { fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] },
+    ];
+    const dateFrom = parseFpDate($('d-date-from').value);
+    const dateTo   = parseFpDate($('d-date-to').value);
+    if (dateFrom || dateTo) {
+        filters.push({
+            fieldName: 'publicDate', searchType: 'range',
+            from: dateFrom ? dateFrom + 'T00:00:00' : null,
+            to:   dateTo   ? dateTo   + 'T23:59:59' : null,
+        });
+    }
+    return filters;
+}
+
 async function doGlobalSearch(keyword) {
     enterSearchMode(keyword);
     showLoading(true);
     hideEmpty();
-    const perTab = Math.max(5, Math.floor(state.pageSize / 2));
-    const searches = [
-        { tabKey: 'tbmt',   filters: getBrowseFilters('tbmt',   'all', ''), matchFields: ['notifyNo','bidName'] },
-        { tabKey: 'khlcnt', filters: getBrowseFilters('khlcnt', 'all', ''), matchFields: ['planNo','bidName']   },
-        { tabKey: 'kqlcnt', filters: getBrowseFilters('kqlcnt', 'all', ''), matchFields: ['notifyNo','bidName'] },
-        { tabKey: 'cgtt',   filters: getBrowseFilters('cgtt',   'all', ''), matchFields: ['notifyNo','bidName'] },
-    ];
     try {
-        const promises = searches.map(s =>
-            postJSON(API.SEARCH, [{ pageSize: perTab, pageNumber: 0, query: [{ index: 'es-contractor-selection', keyWord: keyword, matchType: 'all-1', matchFields: s.matchFields, filters: s.filters }] }])
-            .then(d => ({ tabKey: s.tabKey, data: d }))
-            .catch(() => ({ tabKey: s.tabKey, data: null }))
-        );
-        const responses = await Promise.all(promises);
-        let merged = [];
-        let totalAll = 0;
-        responses.forEach(({ tabKey, data }) => {
-            if (data && data.page) {
-                const items = (data.page.content || []).map(item => ({ ...item, _tabKey: tabKey }));
-                merged = merged.concat(items);
-                totalAll += data.page.totalElements || 0;
-            }
-        });
-        state.results = merged;
-        state.totalElements = totalAll;
-        renderResults();
-        renderStats();
+        const filters = getSearchFilters();
+        const sortHint = filters._sort || null;
+        if (sortHint) delete filters._sort;
+        const query = {
+            index: 'es-contractor-selection',
+            keyWord: keyword,
+            matchType: 'all-1',
+            matchFields: ['notifyNo', 'planNo', 'bidName'],
+            filters: filters,
+        };
+        if (sortHint) query.sort = sortHint;
+        const payload = [{ pageSize: state.pageSize, pageNumber: state.page, query: [query] }];
+        const data = await postJSON(API.SEARCH, payload);
+        if (data && data.page) {
+            state.results = (data.page.content || []).map(item => ({ ...item, _tabKey: guessTabKey(item) }));
+            state.totalElements = data.page.totalElements || 0;
+            renderResults();
+            renderPagination();
+            renderStats();
+        } else {
+            state.results = [];
+            state.totalElements = 0;
+            showEmpty('Không tìm thấy kết quả.');
+        }
     } catch (e) {
         console.error('Global search error:', e);
         state.results = [];
         showEmpty('Lỗi khi tìm kiếm. Vui lòng thử lại.');
     }
     showLoading(false);
-    $('d-pagination').innerHTML = '';
+}
+
+function guessTabKey(item) {
+    if (item.type === 'es-plan-project-p') return 'khlcnt';
+    if (item.bidForm === 'CGTTRG' || item.bidForm === 'CGTT') return 'cgtt';
+    if (item.statusForNotify === 'CNTTT') return 'kqlcnt';
+    return 'tbmt';
 }
 
 async function doBrowse() {
@@ -322,11 +387,10 @@ function renderCard(item, index) {
         winningHtml = '<div class="dcard__winning">' + escHtml(names[0]) + (names.length > 1 ? ' (+' + (names.length-1) + ')' : '') + '</div>';
     }
     return '<div class="dcard' + isSelected + '" data-index="' + index + '">' +
-        '<div class="dcard__top"><span class="dcard__status dcard__status--' + status.cls + '">' + status.label + '</span>' + tabBadge + '<span class="dcard__date">' + date + '</span></div>' +
-        '<div class="dcard__code">' + escHtml(code) + '</div>' +
+        '<div class="dcard__top"><span class="dcard__code">' + escHtml(code) + '</span><span class="dcard__status dcard__status--' + status.cls + '">' + status.label + '</span>' + tabBadge + '<span class="dcard__date">Đăng: ' + date + '</span></div>' +
         '<div class="dcard__name">' + escHtml(bidName) + '</div>' +
         '<div class="dcard__investor">' + escHtml(investor) + '</div>' +
-        '<div class="dcard__bottom"><span class="dcard__price">' + price + '</span>' +
+        '<div class="dcard__bottom"><span class="dcard__price">💰 ' + price + '</span>' +
         (closeDate ? '<span class="dcard__close-date">Đóng: ' + closeDate + '</span>' : '') +
         (loc ? '<span class="dcard__location">📍 ' + escHtml(loc) + '</span>' : '') + '</div>' +
         winningHtml + '</div>';
@@ -350,7 +414,7 @@ function showTbmtDetail(item) {
     const prices = Array.isArray(item.bidPrice) ? item.bidPrice : [item.bidPrice];
     const investField = Array.isArray(item.investField) ? item.investField.map(f => INVEST_FIELD_MAP[f] || f).join(', ') : '';
     const loc = item.locations && item.locations[0] ? item.locations[0].provName : '';
-    const linkType = (item.bidForm === 'CGTTRG' || item.bidForm === 'CGTT') ? 'cgtt' : 'tbmt';
+    const linkType = 'tbmt';
 
     let html = '<div class="ddetail__section"><div class="ddetail__status dcard__status--' + status.cls + '">' + status.label + '</div>' +
         '<table class="ddetail__table">' +
@@ -453,7 +517,11 @@ function getPageRange(current, total, size) {
     return [start, end];
 }
 
-function renderStats() { $('d-total').textContent = state.totalElements.toLocaleString('vi-VN'); }
+function renderStats() {
+    $('d-total').textContent = state.totalElements.toLocaleString('vi-VN');
+    const badge = $('d-mode-badge');
+    if (badge) badge.style.display = state.mode === 'search' ? 'none' : '';
+}
 
 function getStatus(code) { return STATUS_MAP[code || ''] || { label: code || '', cls: 'default' }; }
 

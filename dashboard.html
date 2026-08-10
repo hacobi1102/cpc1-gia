@@ -14,7 +14,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="css/apple-touch-icon.png">
     <link rel="manifest" href="css/site.webmanifest">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/dashboard.css?v=20260807g">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260810f">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     <header class="header">
@@ -49,15 +50,21 @@
             </div>
             <!-- Search mode banner -->
             <div id="d-search-banner" class="dsearch-banner hidden"></div>
+            <!-- Search filters: ngày + tỉnh (chỉ hiện khi search mode) -->
+            <div id="d-search-filters" class="dsearch-filters hidden">
+                <label>Từ ngày <input type="text" id="d-date-from" class="dfilter__input--date fp-date" placeholder="dd/mm/yyyy" readonly></label>
+                <label>Đến ngày <input type="text" id="d-date-to" class="dfilter__input--date fp-date" placeholder="dd/mm/yyyy" readonly></label>
+                <button id="d-search-apply" class="dfilter__btn dfilter__btn--sm">🔄 Áp dụng</button>
+            </div>
         </div>
 
         <!-- Tabs + Bộ lọc cùng hàng -->
         <div class="dtabs">
             <div class="dtabs__left">
-                <button class="dtab dtab--active" data-tab="tbmt">📢 TBMT</button>
+                <button class="dtab dtab--active" data-tab="cgtt">⚡ Chào giá trực tuyến</button>
+                <button class="dtab" data-tab="tbmt">📢 TBMT</button>
                 <button class="dtab" data-tab="khlcnt">📋 Kế hoạch LCNT</button>
                 <button class="dtab" data-tab="kqlcnt">🏆 Kết quả LCNT</button>
-                <button class="dtab" data-tab="cgtt">⚡ Chào giá trực tuyến</button>
             </div>
             <div id="d-filter-dropdowns" class="dtabs__right">
                 <select id="d-medicine-cat" class="dfilter__select dfilter__select--sm">
@@ -131,6 +138,8 @@
 
     <!-- SheetJS for Excel export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="js/dashboard.js?v=20260807g"></script>
+    <!-- Flatpickr datepicker -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/dashboard.js?v=20260810f"></script>
 </body>
 </html>
