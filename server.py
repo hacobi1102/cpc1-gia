@@ -1,5 +1,5 @@
 """
-Proxy Server cho Tra cứu Đơn giá trúng thầu
+Proxy Server cho CPC1 Đấu thầu
 Chuyển tiếp request từ frontend đến muasamcong.mpi.gov.vn
 và thêm CORS headers để tránh lỗi trình duyệt.
 
@@ -14,7 +14,7 @@ import sys
 import ssl
 import urllib.request
 import urllib.error
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode
 
 # SSL context - bo qua certificate verification & cho phep DH_KEY_TOO_SMALL
 SSL_CTX = ssl.create_default_context()
@@ -70,8 +70,11 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, 'Not Found')
 
     def _proxy_request(self):
-        """Chuyển tiếp request đến server đích"""
-        target_url = TARGET_HOST + self.path
+        """Chuyển tiếp request đến server đích (bao gồm query string)"""
+        parsed = urlparse(self.path)
+        target_url = TARGET_HOST + parsed.path
+        if parsed.query:
+            target_url += '?' + parsed.query
 
         # Đọc request body
         content_length = int(self.headers.get('Content-Length', 0))
@@ -155,7 +158,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     print("=" * 56)
-    print("  Tra cuu Don gia trung thau - Proxy Server")
+    print("  CPC1 Dau thau - Proxy Server")
     print("=" * 56)
     print(f"  Thu muc: {STATIC_DIR}")
     print(f"  Server:  http://localhost:{PORT}")

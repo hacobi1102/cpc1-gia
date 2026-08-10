@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard tra cứu thông tin đấu thầu thuốc và vật tư y tế từ Mua sắm công Quốc gia">
+    <title>CPC1 Thông tin thầu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="css/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="css/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="css/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="css/apple-touch-icon.png">
+    <link rel="manifest" href="css/site.webmanifest">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260807g">
+</head>
+<body>
+    <header class="header">
+        <div class="header__inner">
+            <div class="header__brand">
+                <img src="css/cpc1-logo-200.png" alt="CPC1 Logo" class="header__logo">
+                <div class="header__brand-text">
+                    <h1 class="header__title">CPC1 Thông tin thầu thuốc</h1>
+                    <p class="header__subtitle">Tra cứu nhanh thông tin đấu thầu trực tuyến</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="topnav">
+        <div class="topnav__inner">
+            <a href="index.html" class="topnav__item">💰 Giá trúng thầu</a>
+            <a href="dashboard.html" class="topnav__item topnav__item--active">📋 Thông tin thầu</a>
+        </div>
+    </nav>
+
+    <div class="dlayout__wrapper">
+        <!-- Filter Bar -->
+        <div class="dfilter">
+            <div class="dfilter__row">
+                <!-- Search input + buttons (luôn hiển thị) -->
+                <div class="dfilter__search">
+                    <input type="text" id="d-keyword" class="dfilter__input" placeholder="Nhập mã TBMT IBxxx, mã KHLCNT PLxxx, tên thuốc, tên gói thầu...">
+                </div>
+                <button id="d-btn-search" class="dfilter__btn">🔍 Tìm</button>
+                <button id="d-btn-clear" class="dfilter__btn dfilter__btn--clear hidden" title="Xóa tìm kiếm, quay về browse">✕</button>
+            </div>
+            <!-- Search mode banner -->
+            <div id="d-search-banner" class="dsearch-banner hidden"></div>
+        </div>
+
+        <!-- Tabs + Bộ lọc cùng hàng -->
+        <div class="dtabs">
+            <div class="dtabs__left">
+                <button class="dtab dtab--active" data-tab="tbmt">📢 TBMT</button>
+                <button class="dtab" data-tab="khlcnt">📋 Kế hoạch LCNT</button>
+                <button class="dtab" data-tab="kqlcnt">🏆 Kết quả LCNT</button>
+                <button class="dtab" data-tab="cgtt">⚡ Chào giá trực tuyến</button>
+            </div>
+            <div id="d-filter-dropdowns" class="dtabs__right">
+                <select id="d-medicine-cat" class="dfilter__select dfilter__select--sm">
+                    <!-- Populated by JS from MEDICINE_CATS -->
+                </select>
+                <select id="d-status" class="dfilter__select dfilter__select--sm">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="DXT">Đang xét thầu</option>
+                    <option value="CNTTT">Có nhà thầu trúng thầu</option>
+                    <option value="KCNTTT">Không có NTTT</option>
+                    <option value="DHT">Đã huỷ thầu</option>
+                    <option value="DHTBMT">Đã hủy TBMT</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="dstats" id="d-stats">
+            <div class="dstats__item">
+                <span id="d-mode-badge" style="background:#e0f5f5;color:#027a7d;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #b2e8e9;">📅 30 ngày gần đây</span>
+                &nbsp;Tổng: <strong id="d-total">0</strong> gói
+            </div>
+            <div class="dstats__item">
+                <select id="d-pagesize" class="dfilter__select" style="min-width:auto;font-size:0.8rem;padding:4px 8px;">
+                    <option value="10">10/trang</option>
+                    <option value="20" selected>20/trang</option>
+                    <option value="50">50/trang</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Main Content: List + Detail -->
+        <div class="dlayout">
+            <!-- Left: Results List -->
+            <div class="dlist" id="d-list">
+                <!-- Scrollable area: cards + loading + empty -->
+                <div class="dlist__scroll" id="d-list-scroll">
+                    <!-- Loading -->
+                    <div class="dloading hidden" id="d-loading">
+                        <div class="dloading__spinner"></div>
+                        <p>Đang tải dữ liệu...</p>
+                    </div>
+                    <!-- Empty State -->
+                    <div class="dempty" id="d-empty"></div>
+                    <!-- Cards generated by JS -->
+                </div>
+                <!-- Pagination: cố định dưới cùng cột, ngoài vùng scroll -->
+                <div class="dpagination" id="d-pagination"></div>
+            </div>
+
+            <!-- Right: Detail Panel (hidden shows placeholder text via CSS) -->
+            <div class="ddetail hidden" id="d-detail">
+                <div class="ddetail__header">
+                    <h3 class="ddetail__title" id="d-detail-title">Chi tiết gói thầu</h3>
+                    <button class="ddetail__close" id="d-detail-close">✕</button>
+                </div>
+                <div class="ddetail__body" id="d-detail-body"></div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <footer class="footer">
+        <p>Dữ liệu được lấy từ Hệ thống mạng đấu thầu quốc gia.</p>
+        <p style="margin-top: 6px; font-size: 0.82rem; opacity: 0.75;">Thiết kế bởi <strong>Nguyễn Văn Dũng</strong> ❤️ 0978.777.191</p>
+		<p style="margin-top: 6px; font-size: 0.82rem; opacity: 0.75;"><!-- Style Flat bo góc nhẹ, màu xanh ngọc -->
+			<img src="https://hits.sh/giathau.kdcpc1.com.svg?style=flat&label=Lượt%20xem&color=10b981&labelColor=1e293b" alt="Views"/>
+		</p>
+    </footer>
+
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/dashboard.js?v=20260807g"></script>
+</body>
+</html>
