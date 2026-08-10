@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initFilters();
     initFlatpickr();
+    restoreTabFilters(state.tab); // ẩn bộ lọc thừa ngay từ đầu
     doBrowse();
 });
 
@@ -129,10 +130,12 @@ function saveTabFilters(tab) {
 
 function restoreTabFilters(tab) {
     const ts = tabStates[tab];
-    $('d-medicine-cat').value = ts.medicinesCat;
+    const hideMedicineCat = (tab === 'cgtt' || tab === 'khlcnt');
+    const medEl = $('d-medicine-cat');
+    medEl.style.display = hideMedicineCat ? 'none' : '';
+    if (!hideMedicineCat) medEl.value = ts.medicinesCat;
     $('d-status').value = ts.statusFilter;
     state.page = ts.page;
-    $('d-medicine-cat').style.display = (tab === 'cgtt' || tab === 'khlcnt') ? 'none' : '';
 }
 
 function initFilters() {
@@ -320,8 +323,11 @@ function getBrowseFilters(tab, cat, statusFilter) {
     } else if (tab === 'cgtt') {
         filters.push({ fieldName: 'type', searchType: 'in', fieldValues: ['es-notify-contractor'] });
         filters.push({ fieldName: 'bidForm', searchType: 'in', fieldValues: ['CGTTRG'] });
-        filters.push({ fieldName: 'statusForNotify', searchType: 'in', fieldValues: [''] });
+        if (statusFilter) filters.push({ fieldName: 'statusForNotify', searchType: 'in', fieldValues: [statusFilter] });
         filters.push({ fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] });
+        // CGTT dùng publicDate + from/to (giống KHLCNT), không dùng originalPublicDate
+        const [df, dt] = getLast30Days();
+        filters.push({ fieldName: 'publicDate', searchType: 'range', from: df, to: dt });
         return filters;
     }
     const [dateFrom, dateTo] = getLast30Days();
