@@ -1,4 +1,4 @@
-const $ = id => document.getElementById(id);
+﻿const $ = id => document.getElementById(id);
 
 const API_BASE = '';
 const SEARCH_URL = '/o/egp-portal-winning-bid-data/services/smart/search_prc';
@@ -76,10 +76,10 @@ const TAB_CONFIG = {
             {key: 'maTbmt', label: 'Mã TBMT'},
             {key: 'tenCdtBmt', label: 'Tên CĐT'},
             {key: 'bidForm', label: 'Hình thức LCNT', format: 'category'},
-            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải KQLCNT', format: 'date'},
+            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải', format: 'date'},
             {key: 'soQuyetDinh', label: 'Số quyết định'},
-            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
-            {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
+            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày quyết định', format: 'date'},
+            {key: 'soNhaThauThamDu', label: 'Số nhà thầu', class: 'td-number', format: 'number'},
             {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
             {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
@@ -104,15 +104,15 @@ const TAB_CONFIG = {
             {key: 'quyCachDongGoi', label: 'Quy cách đóng gói'},
             {key: 'donViTinh', label: 'Đơn vị tính'},
             {key: 'soLuong', label: 'Số lượng', class: 'td-number', format: 'number'},
-            {key: 'donGia', label: 'Đơn giá trúng thầu (VND)', class: 'td-price', format: 'currency'},
+            {key: 'donGia', label: 'Đơn giá (VND)', class: 'td-price', format: 'currency'},
             {key: 'nhomThuoc', label: 'Nhóm thuốc'},
             {key: 'maTbmt', label: 'Mã TBMT'},
             {key: 'tenCdtBmt', label: 'Tên CĐT'},
             {key: 'bidForm', label: 'Hình thức LCNT', format: 'category'},
-            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải KQLCNT', format: 'date'},
+            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải', format: 'date'},
             {key: 'soQuyetDinh', label: 'Số quyết định'},
-            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
-            {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
+            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày quyết định', format: 'date'},
+            {key: 'soNhaThauThamDu', label: 'Số nhà thầu', class: 'td-number', format: 'number'},
             {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
             {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
@@ -152,15 +152,15 @@ const TAB_CONFIG = {
             {key: 'quyCachDongGoi', label: 'Quy cách đóng gói'},
             {key: 'donViTinh', label: 'Đơn vị tính'},
             {key: 'soLuong', label: 'Số lượng', class: 'td-number', format: 'number'},
-            {key: 'donGia', label: 'Đơn giá trúng thầu (VND)', class: 'td-price', format: 'currency'},
+            {key: 'donGia', label: 'Đơn giá (VND)', class: 'td-price', format: 'currency'},
             {key: 'nhomTCKT', label: 'Nhóm TCKT'},
             {key: 'maTbmt', label: 'Mã TBMT'},
             {key: 'tenCdtBmt', label: 'Tên CĐT'},
             {key: 'bidForm', label: 'Hình thức LCNT', format: 'category'},
-            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải KQLCNT', format: 'date'},
+            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải', format: 'date'},
             {key: 'soQuyetDinh', label: 'Số quyết định'},
-            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
-            {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
+            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày quyết định', format: 'date'},
+            {key: 'soNhaThauThamDu', label: 'Số nhà thầu', class: 'td-number', format: 'number'},
             {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
             {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
@@ -184,15 +184,15 @@ const TAB_CONFIG = {
             {key: 'quyCachDongGoi', label: 'Quy cách đóng gói'},
             {key: 'donViTinh', label: 'Đơn vị tính'},
             {key: 'soLuong', label: 'Số lượng', class: 'td-number', format: 'number'},
-            {key: 'donGia', label: 'Đơn giá trúng thầu (VND)', class: 'td-price', format: 'currency'},
+            {key: 'donGia', label: 'Đơn giá (VND)', class: 'td-price', format: 'currency'},
             {key: 'nhomTCKT', label: 'Nhóm TCKT'},
             {key: 'maTbmt', label: 'Mã TBMT'},
             {key: 'tenCdtBmt', label: 'Tên CĐT'},
             {key: 'bidForm', label: 'Hình thức LCNT', format: 'category'},
-            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải KQLCNT', format: 'date'},
+            {key: 'ngayDangTaiKqlcnt', label: 'Ngày đăng tải', format: 'date'},
             {key: 'soQuyetDinh', label: 'Số quyết định'},
-            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày ban hành quyết định', format: 'date'},
-            {key: 'soNhaThauThamDu', label: 'Số nhà thầu tham dự', class: 'td-number', format: 'number'},
+            {key: 'ngayBanHanhQuyetDinh', label: 'Ngày quyết định', format: 'date'},
+            {key: 'soNhaThauThamDu', label: 'Số nhà thầu', class: 'td-number', format: 'number'},
             {key: 'diaDiem', label: 'Địa điểm', class: 'td-location', format: 'location'},
             {key: 'winningName', label: 'Nhà thầu trúng thầu', class: 'td-desc'}
         ]
