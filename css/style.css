@@ -691,3 +691,12 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+    /* Ngăn chặn iPhone / iOS Safari tự động phóng to (zoom) trang web khi bấm vào các ô nhập văn bản */
+    @media screen and (max-width: 768px) {
+      input[type="text"],
+      input[type="number"],
+	  input[type="search"],
+      textarea {
+        font-size: 16px !important;
+      }
+    }
