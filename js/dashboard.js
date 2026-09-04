@@ -270,16 +270,13 @@ async function doBrowse() {
     saveTabFilters(tab);
     showLoading(true);
     hideEmpty();
-    const filters = getBrowseFilters(tab, cat, statusFilter);
+    const { filters, sort } = getBrowseFilters(tab, cat, statusFilter);
     const matchFields = tab === 'khlcnt' ? ['planNo', 'bidName'] : ['notifyNo', 'bidName'];
     // CGTT + KHLCNT: không có isMedicine field → lọc bằng keyword 'thuốc'
     const browseKeyword = (tab === 'cgtt' || tab === 'khlcnt') ? 'thuốc' : '';
-    // Nếu filters có _sort hint (KHLCNT), truyền vào query
-    const sortHint = filters._sort || null;
-    if (sortHint) delete filters._sort;
     try {
         const query = { index: 'es-contractor-selection', keyWord: browseKeyword, matchType: 'all-1', matchFields: matchFields, filters: filters };
-        if (sortHint) query.sort = sortHint;
+        if (sort) query.sort = sort;
         const payload = [{ pageSize: state.pageSize, pageNumber: state.page, query: [query] }];
         const data = await postJSON(API.SEARCH, payload);
         if (data && data.page) {
@@ -310,13 +307,10 @@ function getBrowseFilters(tab, cat, statusFilter) {
     } else if (tab === 'khlcnt') {
         filters.push({ fieldName: 'type', searchType: 'in', fieldValues: ['es-plan-project-p'] });
         filters.push({ fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] });
-        // Chỉ KHLCNT có gói thầu chưa đăng tải TBMT
         filters.push({ fieldName: 'haveBidNotNotify', searchType: 'in', fieldValues: ['1'] });
-        // Date range 30 ngày: dùng from/to (không phải fieldValues!)
         const [df, dt] = getLast30Days();
         filters.push({ fieldName: 'publicDate', searchType: 'range', from: df, to: dt });
-        filters._sort = { fieldName: 'publicDate', sortType: 'desc' };
-        return filters;
+        return { filters, sort: { fieldName: 'publicDate', sortType: 'desc' } };
     } else if (tab === 'kqlcnt') {
         filters.push({ fieldName: 'type', searchType: 'in', fieldValues: ['es-notify-contractor'] });
         filters.push({ fieldName: 'statusForNotify', searchType: 'in', fieldValues: ['CNTTT'] });
@@ -325,28 +319,23 @@ function getBrowseFilters(tab, cat, statusFilter) {
         filters.push({ fieldName: 'bidForm', searchType: 'in', fieldValues: ['CGTTRG'] });
         if (statusFilter) filters.push({ fieldName: 'statusForNotify', searchType: 'in', fieldValues: [statusFilter] });
         filters.push({ fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] });
-        // CGTT dùng publicDate + from/to (giống KHLCNT), không dùng originalPublicDate
         const [df, dt] = getLast30Days();
         filters.push({ fieldName: 'publicDate', searchType: 'range', from: df, to: dt });
-        return filters;
+        return { filters, sort: null };
     }
+    // tbmt & kqlcnt: dùng publicDate + from/to (originalPublicDate+fieldValues bị API bỏ qua)
     const [dateFrom, dateTo] = getLast30Days();
-    const dateField = (tab === 'khlcnt') ? 'publicDate' : 'originalPublicDate';
-    filters.push({ fieldName: dateField, searchType: 'range', fieldValues: [dateFrom, dateTo] });
-    if (tab === 'khlcnt') {
+    filters.push({ fieldName: 'publicDate', searchType: 'range', from: dateFrom, to: dateTo });
+    if (cat === 'tbyt') {
         filters.push({ fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] });
+        filters.push({ fieldName: 'isMedicine', searchType: 'not_in', fieldValues: ['1'] });
+    } else if (cat === 'all') {
+        filters.push({ fieldName: 'isMedicine', searchType: 'in', fieldValues: ['1'] });
     } else {
-        if (cat === 'tbyt') {
-            filters.push({ fieldName: 'investField', searchType: 'in', fieldValues: ['HH'] });
-            filters.push({ fieldName: 'isMedicine', searchType: 'not_in', fieldValues: ['1'] });
-        } else if (cat === 'all') {
-            filters.push({ fieldName: 'isMedicine', searchType: 'in', fieldValues: ['1'] });
-        } else {
-            filters.push({ fieldName: 'isMedicine', searchType: 'in', fieldValues: ['1'] });
-            filters.push({ fieldName: 'medicines', searchType: 'in', fieldValues: [cat] });
-        }
+        filters.push({ fieldName: 'isMedicine', searchType: 'in', fieldValues: ['1'] });
+        filters.push({ fieldName: 'medicines', searchType: 'in', fieldValues: [cat] });
     }
-    return filters;
+    return { filters, sort: null };
 }
 
 function getLast30Days() {
@@ -558,15 +547,25 @@ function showLoading(show) {
     const loader = $('d-loading');
     if (!loader) return;
     loader.classList.toggle('hidden', !show);
-    if (show) $('d-list-scroll').querySelectorAll('.dcard').forEach(c => c.style.display = 'none');
-    else $('d-list-scroll').querySelectorAll('.dcard').forEach(c => c.style.display = '');
+    $('d-list-scroll').querySelectorAll('.dcard').forEach(c => c.classList.toggle('hidden', show));
 }
 
 function showEmpty(msg) { const el = $('d-empty'); if (el) { el.textContent = msg || ''; el.classList.remove('hidden'); } }
 function hideEmpty() { const el = $('d-empty'); if (el) el.classList.add('hidden'); }
 
-async function postJSON(url, payload) {
-    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    return resp.json();
+async function postJSON(url, payload, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+    } finally {
+        clearTimeout(timer);
+    }
 }

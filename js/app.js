@@ -1,4 +1,4 @@
-﻿const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 const API_BASE = '';
 const SEARCH_URL = '/o/egp-portal-winning-bid-data/services/smart/search_prc';
@@ -583,8 +583,7 @@ async function performSearch() {
         const selectedBidForm = $('bid-form-select')?.value;
         if (selectedBidForm) {
             items = items.filter(it => it.bidForm === selectedBidForm);
-            // Update total to reflect filtered count on this page
-            state.totalElements = items.length;
+            // Note: totalElements from server is kept; displayed count may differ for this page
         }
 
         state.lastResults = items;
@@ -682,10 +681,12 @@ function exportToExcel() {
 
     // Prepare array of row objects
     const dataRows = items.map((item, index) => {
-        item.stt = state.pageNumber * state.pageSize + index + 1;
+        const stt = state.pageNumber * state.pageSize + index + 1;
         const rowObj = {};
         columns.forEach(col => {
-            let val = formatCellContent(item, col);
+            // Use local stt for STT column, don't mutate item
+            const cellItem = col.key === 'stt' ? { ...item, stt } : item;
+            let val = formatCellContent(cellItem, col);
             val = String(val).replace(/<[^>]*>/g, '').trim();
             // Convert numerical values for proper Excel formatting
             if (col.format === 'currency' || col.format === 'number') {
@@ -801,7 +802,7 @@ function init() {
     $('page-size-select').addEventListener('change', (e) => {
         state.pageSize = parseInt(e.target.value);
         state.pageNumber = 0;
-        performSearch();
+        if (state.hasSearched) performSearch();
     });
 
     // Initialize Flatpickr Datepicker safely

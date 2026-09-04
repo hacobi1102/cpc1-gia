@@ -149,7 +149,6 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
 
     def handle_error(self, request, client_address):
         """Suppress harmless connection errors (browser closed tab/navigated away)"""
-        import sys
         exc_type = sys.exc_info()[0]
         if exc_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
             return  # Ignore — browser just closed the connection early

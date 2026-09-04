@@ -495,7 +495,6 @@ body {
 
 /* Loading Overlay */
 .loading-overlay {
-    position: absolute; /* Requires wrapper relative or use fixed */
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(255, 255, 255, 0.8);
@@ -557,45 +556,7 @@ body {
   background: var(--surface);
 }
 
-/* Mobile Filter Button - hidden, no longer used (filter is top card) */
-.mobile-filter-btn {
-    display: none !important;
-}
-.sidebar-backdrop {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 99;
-}
-.sidebar-backdrop.visible {
-    display: block;
-}
-
 /* Responsive */
-@media (max-width: 1023px) {
-    .layout {
-        grid-template-columns: 1fr;
-    }
-    .sidebar {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        height: 100vh;
-        width: 320px;
-        z-index: 100;
-        border-radius: 0;
-        transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
-    }
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    .sidebar__close {
-        display: block;
-    }
-}
 
 @media (max-width: 767px) {
     .table-wrapper {
@@ -691,6 +652,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
     /* Ngăn chặn iPhone / iOS Safari tự động phóng to (zoom) trang web khi bấm vào các ô nhập văn bản */
     @media screen and (max-width: 768px) {
       input[type="text"],

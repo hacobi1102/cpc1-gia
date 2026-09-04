@@ -17,6 +17,7 @@
   --text:       #0f2f30;
   --text-sub:   #3d6263;
   --text-muted: #7a9899;
+  --text-secondary: #7a9899;
   --border:     #d4e6e7;
 
   --green:  #16a34a; --green-bg:  #f0fdf4; --green-border: #bbf7d0;
@@ -613,6 +614,7 @@ body {
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
+/* @keyframes spin defined in style.css — reuse */
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== EMPTY STATE ===== */
@@ -698,12 +700,12 @@ body {
     flex: 1 1 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: none;       /* Firefox */
-    -ms-overflow-style: none;    /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     flex-wrap: nowrap;
     padding-bottom: 2px;
   }
-  .dtabs__left::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+  .dtabs__left::-webkit-scrollbar { display: none; }
   .dtabs__right {
     flex: 1 1 100%;
     padding-bottom: 6px;
@@ -728,12 +730,3 @@ body {
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
-    /* Ngăn chặn iPhone / iOS Safari tự động phóng to (zoom) trang web khi bấm vào các ô nhập văn bản */
-    @media screen and (max-width: 768px) {
-      input[type="text"],
-	  input[type="number"],
-      input[type="search"],
-      textarea {
-        font-size: 16px !important;
-      }
-    }
