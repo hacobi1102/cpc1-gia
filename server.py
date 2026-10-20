@@ -16,6 +16,19 @@ import urllib.request
 import urllib.error
 from urllib.parse import urlparse, parse_qs, urlencode
 
+
+class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Chặn auto-redirect để giữ method POST (urllib mặc định đổi POST→GET khi 301/302)"""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Trả về request mới giữ nguyên method POST + body
+        new_req = urllib.request.Request(
+            newurl,
+            data=req.data,
+            method=req.method,
+            headers=dict(req.headers)
+        )
+        return new_req
+
 # SSL context - bo qua certificate verification & cho phep DH_KEY_TOO_SMALL
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -24,6 +37,12 @@ try:
     SSL_CTX.set_ciphers('DEFAULT:@SECLEVEL=1')
 except Exception:
     pass
+
+# Opener giữ POST khi redirect
+OPENER = urllib.request.build_opener(
+    NoRedirectHandler,
+    urllib.request.HTTPSHandler(context=SSL_CTX)
+)
 
 # ===== CẤU HÌNH =====
 PORT = int(os.environ.get('PORT', 8080))
@@ -76,6 +95,8 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         if parsed.query:
             target_url += '?' + parsed.query
 
+        print(f"  [PROXY] -> POST {target_url}")
+
         # Đọc request body
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length) if content_length > 0 else None
@@ -94,8 +115,8 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                 }
             )
 
-            # Gửi request
-            with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as response:
+            # Gửi request (dùng OPENER giữ POST khi redirect)
+            with OPENER.open(req, timeout=30) as response:
                 response_data = response.read()
                 
                 self.send_response(response.status)
