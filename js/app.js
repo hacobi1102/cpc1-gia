@@ -41,7 +41,13 @@ const state = {
     totalElements: 0,
     hasSearched: false,
     lastResults: [],
+    originalResults: [],
     isLoading: false,
+    sortOrder: '',
+    sortCol: '',
+    sortDir: '',
+    colFilters: {},
+    activePopoverCol: null,
     categories: { bidForms: Object.assign({}, BID_FORM_MAP) }
 };
 
@@ -413,6 +419,76 @@ function buildQuery() {
     return query;
 }
 
+// Sort & Filter Results (client-side on current page)
+function getCellDisplayString(item, col) {
+    const val = formatCellContent(item, col);
+    return String(val ?? '').replace(/<[^>]*>/g, '').trim();
+}
+
+function sortResults(items) {
+    if (!items || items.length === 0) return items;
+
+    const colKey = state.sortCol || (state.sortOrder ? 'donGia' : '');
+    const dir = state.sortDir || (state.sortOrder === 'price-asc' ? 'asc' : state.sortOrder === 'price-desc' ? 'desc' : '');
+    if (!colKey || !dir) return items;
+
+    const config = TAB_CONFIG[state.currentTab];
+    const col = config?.columns?.find(c => c.key === colKey) || { key: colKey, format: 'currency' };
+    const factor = dir === 'asc' ? 1 : -1;
+
+    items.sort((a, b) => {
+        if (col.format === 'currency' || col.format === 'number') {
+            const valA = a[colKey] != null && a[colKey] !== '' ? Number(a[colKey]) : null;
+            const valB = b[colKey] != null && b[colKey] !== '' ? Number(b[colKey]) : null;
+            if (valA === null && valB === null) return 0;
+            if (valA === null) return 1;
+            if (valB === null) return -1;
+            return (valA - valB) * factor;
+        }
+        if (col.format === 'date') {
+            const dA = parseVietnameseDate(a[colKey]);
+            const dB = parseVietnameseDate(b[colKey]);
+            const tA = dA ? dA.getTime() : null;
+            const tB = dB ? dB.getTime() : null;
+            if (tA === null && tB === null) return 0;
+            if (tA === null) return 1;
+            if (tB === null) return -1;
+            return (tA - tB) * factor;
+        }
+        const strA = getCellDisplayString(a, col);
+        const strB = getCellDisplayString(b, col);
+        if (!strA && !strB) return 0;
+        if (!strA) return 1;
+        if (!strB) return -1;
+        return strA.localeCompare(strB, 'vi', { numeric: true, sensitivity: 'base' }) * factor;
+    });
+    return items;
+}
+
+function applyTableFiltersAndSort() {
+    const config = TAB_CONFIG[state.currentTab];
+    const columns = config?.columns || [];
+    let filtered = [...state.originalResults];
+
+    Object.keys(state.colFilters).forEach(colKey => {
+        const allowedSet = state.colFilters[colKey];
+        if (allowedSet instanceof Set) {
+            const col = columns.find(c => c.key === colKey);
+            if (col) {
+                filtered = filtered.filter(item => {
+                    const strVal = getCellDisplayString(item, col);
+                    return allowedSet.has(strVal);
+                });
+            }
+        }
+    });
+
+    sortResults(filtered);
+    state.lastResults = filtered;
+    renderTableHeaders();
+    renderResults(filtered);
+}
+
 // Render Functions
 function formatCellContent(item, col) {
     let rawValue = item[col.key];
@@ -436,10 +512,257 @@ function renderTableHeaders() {
     const thead = $('results-table-head');
     let tr = '<tr>';
     config.columns.forEach(col => {
-        tr += `<th class="table__th ${col.class || ''}">${escapeHtml(col.label)}</th>`;
+        if (col.key === 'stt') {
+            tr += `<th class="table__th ${col.class || ''}">${escapeHtml(col.label)}</th>`;
+        } else {
+            const isSorted = state.sortCol === col.key && state.sortDir;
+            const isFiltered = state.colFilters[col.key] instanceof Set;
+            const activeClass = (isSorted || isFiltered) ? 'is-active' : '';
+            let icon = '▾';
+            if (isSorted && isFiltered) {
+                icon = state.sortDir === 'asc' ? '↑▾' : '↓▾';
+            } else if (isSorted) {
+                icon = state.sortDir === 'asc' ? '↑' : '↓';
+            }
+            tr += `<th class="table__th ${col.class || ''}" data-col-key="${col.key}">
+                <div class="th-content">
+                    <span>${escapeHtml(col.label)}</span>
+                    <button type="button" class="th-filter-btn ${activeClass}" data-col-key="${col.key}" title="Lọc & sắp xếp">${icon}</button>
+                </div>
+            </th>`;
+        }
     });
     tr += '</tr>';
     thead.innerHTML = tr;
+
+    thead.querySelectorAll('.th-filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openColumnFilterPopover(btn.dataset.colKey, btn);
+        });
+    });
+}
+
+function closeColumnFilterPopover() {
+    const pop = $('col-filter-popover');
+    if (pop) pop.classList.add('hidden');
+    state.activePopoverCol = null;
+}
+
+function openColumnFilterPopover(colKey, anchorBtn) {
+    const pop = $('col-filter-popover');
+    if (!pop) return;
+
+    if (state.activePopoverCol === colKey && !pop.classList.contains('hidden')) {
+        closeColumnFilterPopover();
+        return;
+    }
+    state.activePopoverCol = colKey;
+
+    const config = TAB_CONFIG[state.currentTab];
+    const col = config?.columns?.find(c => c.key === colKey);
+    if (!col) return;
+
+    // Calculate unique values & counts from originalResults ( filtered by OTHER columns )
+    const otherFiltered = state.originalResults.filter(item => {
+        return Object.keys(state.colFilters).every(k => {
+            if (k === colKey) return true;
+            const set = state.colFilters[k];
+            if (!(set instanceof Set)) return true;
+            const cObj = config.columns.find(c => c.key === k);
+            return cObj ? set.has(getCellDisplayString(item, cObj)) : true;
+        });
+    });
+
+    const countsMap = new Map();
+    otherFiltered.forEach(item => {
+        const val = getCellDisplayString(item, col);
+        countsMap.set(val, (countsMap.get(val) || 0) + 1);
+    });
+
+    const uniqueEntries = Array.from(countsMap.entries()).sort((a, b) => {
+        if (a[0] === '') return 1;
+        if (b[0] === '') return -1;
+        if (col.format === 'currency' || col.format === 'number') {
+            const nA = Number(a[0].replace(/\./g, '').replace(/,/g, '.'));
+            const nB = Number(b[0].replace(/\./g, '').replace(/,/g, '.'));
+            if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
+        }
+        return a[0].localeCompare(b[0], 'vi', { numeric: true, sensitivity: 'base' });
+    });
+
+    const currentFilterSet = state.colFilters[colKey];
+    let tempSelected = currentFilterSet instanceof Set
+        ? new Set(currentFilterSet)
+        : new Set(uniqueEntries.map(e => e[0]));
+
+    let tempSortDir = state.sortCol === colKey ? state.sortDir : '';
+
+    const isAsc = tempSortDir === 'asc';
+    const isDesc = tempSortDir === 'desc';
+
+    pop.innerHTML = `
+        <div class="cfp-sort-group">
+            <button type="button" class="cfp-sort-btn ${isAsc ? 'active' : ''}" data-dir="asc">
+                <span>↑</span> <span>Sắp xếp từ A đến Z</span>
+            </button>
+            <button type="button" class="cfp-sort-btn ${isDesc ? 'active' : ''}" data-dir="desc">
+                <span>↓</span> <span>Sắp xếp từ Z đến A</span>
+            </button>
+        </div>
+        <div class="cfp-search-box">
+            <input type="text" class="cfp-search-input" placeholder="Tìm kiếm..." id="cfp-search-input">
+        </div>
+        <div class="cfp-list" id="cfp-list"></div>
+        <div class="cfp-actions">
+            ${currentFilterSet instanceof Set || (state.sortCol === colKey && state.sortDir) ? '<button type="button" class="cfp-btn cfp-btn--clear" id="cfp-btn-clear">Xóa lọc</button>' : ''}
+            <button type="button" class="cfp-btn" id="cfp-btn-cancel">Hủy bỏ</button>
+            <button type="button" class="cfp-btn cfp-btn--ok" id="cfp-btn-ok">OK</button>
+        </div>
+    `;
+
+    const listEl = pop.querySelector('#cfp-list');
+    const searchInput = pop.querySelector('#cfp-search-input');
+
+    function renderCheckboxList(keyword = '') {
+        const kw = keyword.trim().toLowerCase();
+        const visibleEntries = kw
+            ? uniqueEntries.filter(([val]) => {
+                const label = val === '' ? '(Trống)' : val;
+                return label.toLowerCase().includes(kw);
+            })
+            : uniqueEntries;
+
+        if (visibleEntries.length === 0) {
+            listEl.innerHTML = '<div style="padding:10px;text-align:center;color:#94a3b8;">Không có kết quả</div>';
+            return;
+        }
+
+        const allVisibleChecked = visibleEntries.every(([val]) => tempSelected.has(val));
+
+        let html = `
+            <label class="cfp-item cfp-item--all">
+                <input type="checkbox" id="cfp-check-all" ${allVisibleChecked ? 'checked' : ''}>
+                <span class="cfp-item-label">(Chọn Tất cả)</span>
+            </label>
+        `;
+
+        visibleEntries.forEach(([val, count], idx) => {
+            const label = val === '' ? '(Trống)' : escapeHtml(val);
+            const checked = tempSelected.has(val) ? 'checked' : '';
+            html += `
+                <label class="cfp-item">
+                    <input type="checkbox" class="cfp-val-check" data-idx="${idx}" ${checked}>
+                    <span class="cfp-item-label" title="${label}">${label}</span>
+                    <span class="cfp-item-count">${count}</span>
+                </label>
+            `;
+        });
+
+        listEl.innerHTML = html;
+
+        const checkAllEl = listEl.querySelector('#cfp-check-all');
+        if (checkAllEl) {
+            checkAllEl.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                visibleEntries.forEach(([val]) => {
+                    if (isChecked) tempSelected.add(val);
+                    else tempSelected.delete(val);
+                });
+                renderCheckboxList(searchInput.value);
+            });
+        }
+
+        listEl.querySelectorAll('.cfp-val-check').forEach(chk => {
+            chk.addEventListener('change', (e) => {
+                const entry = visibleEntries[Number(e.target.dataset.idx)];
+                if (!entry) return;
+                if (e.target.checked) tempSelected.add(entry[0]);
+                else tempSelected.delete(entry[0]);
+                const nowAll = visibleEntries.every(([v]) => tempSelected.has(v));
+                if (checkAllEl) checkAllEl.checked = nowAll;
+            });
+        });
+    }
+
+    renderCheckboxList();
+
+    searchInput.addEventListener('input', (e) => {
+        renderCheckboxList(e.target.value);
+    });
+
+    pop.querySelectorAll('.cfp-sort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dir = btn.dataset.dir;
+            tempSortDir = (tempSortDir === dir) ? '' : dir;
+            pop.querySelectorAll('.cfp-sort-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.dir === tempSortDir);
+            });
+        });
+    });
+
+    pop.querySelector('#cfp-btn-cancel')?.addEventListener('click', () => {
+        closeColumnFilterPopover();
+    });
+
+    pop.querySelector('#cfp-btn-clear')?.addEventListener('click', () => {
+        delete state.colFilters[colKey];
+        if (state.sortCol === colKey) {
+            state.sortCol = '';
+            state.sortDir = '';
+            state.sortOrder = '';
+            if ($('sort-select')) $('sort-select').value = '';
+        }
+        closeColumnFilterPopover();
+        applyTableFiltersAndSort();
+    });
+
+    pop.querySelector('#cfp-btn-ok')?.addEventListener('click', () => {
+        if (tempSelected.size === uniqueEntries.length) {
+            delete state.colFilters[colKey];
+        } else {
+            state.colFilters[colKey] = new Set(tempSelected);
+        }
+
+        if (tempSortDir) {
+            state.sortCol = colKey;
+            state.sortDir = tempSortDir;
+            if (colKey === 'donGia') {
+                state.sortOrder = tempSortDir === 'asc' ? 'price-asc' : 'price-desc';
+                if ($('sort-select')) $('sort-select').value = state.sortOrder;
+            } else {
+                state.sortOrder = '';
+                if ($('sort-select')) $('sort-select').value = '';
+            }
+        } else if (state.sortCol === colKey) {
+            state.sortCol = '';
+            state.sortDir = '';
+            state.sortOrder = '';
+            if ($('sort-select')) $('sort-select').value = '';
+        }
+
+        closeColumnFilterPopover();
+        applyTableFiltersAndSort();
+    });
+
+    pop.classList.remove('hidden');
+
+    // Position popover near anchorBtn
+    const rect = anchorBtn.getBoundingClientRect();
+    const popWidth = 270;
+    let left = rect.left;
+    if (left + popWidth > window.innerWidth - 12) {
+        left = Math.max(12, window.innerWidth - popWidth - 12);
+    }
+    let top = rect.bottom + 6;
+    const popHeight = pop.offsetHeight || 340;
+    if (top + popHeight > window.innerHeight - 12) {
+        top = Math.max(12, rect.top - popHeight - 6);
+    }
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+
+    setTimeout(() => searchInput.focus(), 20);
 }
 
 function renderResults(items) {
@@ -586,9 +909,11 @@ async function performSearch() {
             // Note: totalElements from server is kept; displayed count may differ for this page
         }
 
-        state.lastResults = items;
+        state.originalResults = [...items];
+        state.colFilters = {};
+        closeColumnFilterPopover();
+        applyTableFiltersAndSort();
 
-        renderResults(items);
         renderPagination();
         updateStats();
 
@@ -638,8 +963,14 @@ function switchTab(tabKey) {
         $('medicine-type-select').value = '0';
     }
 
-    // Reset page number and update headers
+    // Reset page number, column filters/sort and update headers
     state.pageNumber = 0;
+    state.colFilters = {};
+    state.sortCol = '';
+    state.sortDir = '';
+    state.sortOrder = '';
+    if ($('sort-select')) $('sort-select').value = '';
+    closeColumnFilterPopover();
     renderTableHeaders();
     if (state.hasSearched) {
         performSearch();
@@ -662,6 +993,14 @@ function resetFilters() {
     $('medicine-type-select').value = '0';
     const minQtyEl = $('min-quantity');
     if (minQtyEl) minQtyEl.value = '';
+    const sortEl = $('sort-select');
+    if (sortEl) sortEl.value = '';
+    state.sortOrder = '';
+    state.sortCol = '';
+    state.sortDir = '';
+    state.colFilters = {};
+    closeColumnFilterPopover();
+    renderTableHeaders();
 }
 
 function exportToExcel() {
@@ -723,6 +1062,113 @@ function exportToExcel() {
     XLSX.writeFile(workbook, fileName);
 }
 
+async function exportAllToExcel() {
+    if (!state.hasSearched || state.totalElements === 0) {
+        alert('Không có dữ liệu để xuất. Vui lòng tìm kiếm trước!');
+        return;
+    }
+
+    if (typeof XLSX === 'undefined') {
+        alert('Đang tải thư viện Excel, vui lòng thử lại sau vài giây!');
+        return;
+    }
+
+    const MAX_EXPORT = 10000;
+    const total = Math.min(state.totalElements, MAX_EXPORT);
+
+    if (state.totalElements > MAX_EXPORT) {
+        if (!confirm(`Dữ liệu có ${formatNumber(state.totalElements)} dòng, chỉ xuất tối đa ${formatNumber(MAX_EXPORT)} dòng. Tiếp tục?`)) {
+            return;
+        }
+    }
+
+    // Show loading
+    $('loading-overlay').classList.remove('hidden');
+
+    try {
+        const payload = {
+            pageSize: total,
+            pageNumber: 0,
+            query: buildQuery()
+        };
+
+        const response = await fetch(SEARCH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([payload])
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi kết nối máy chủ (${response.status})`);
+        }
+
+        const data = await response.json();
+        let allItems = data?.page?.content || [];
+
+        // Client-side filter by bidForm (same as performSearch)
+        const selectedBidForm = $('bid-form-select')?.value;
+        if (selectedBidForm) {
+            allItems = allItems.filter(it => it.bidForm === selectedBidForm);
+        }
+
+        if (allItems.length === 0) {
+            alert('Không có dữ liệu phù hợp để xuất!');
+            return;
+        }
+
+        // Apply current sort
+        if (state.sortCol || state.sortOrder) {
+            sortResults(allItems);
+        }
+
+        // Build Excel
+        const config = TAB_CONFIG[state.currentTab];
+        const columns = config.columns || [];
+
+        const dataRows = allItems.map((item, index) => {
+            const stt = index + 1;
+            const rowObj = {};
+            columns.forEach(col => {
+                const cellItem = col.key === 'stt' ? { ...item, stt } : item;
+                let val = formatCellContent(cellItem, col);
+                val = String(val).replace(/<[^>]*>/g, '').trim();
+                if (col.format === 'currency' || col.format === 'number') {
+                    const num = item[col.key];
+                    if (num !== undefined && num !== null && num !== '') {
+                        val = Number(num);
+                    }
+                }
+                rowObj[col.label] = val;
+            });
+            return rowObj;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataRows);
+
+        const colWidths = columns.map(col => {
+            let maxLen = col.label.length;
+            dataRows.slice(0, 100).forEach(row => {
+                const cellVal = String(row[col.label] || '');
+                if (cellVal.length > maxLen) maxLen = cellVal.length;
+            });
+            return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
+        });
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'KQLCNT');
+
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const fileName = `Ket_qua_ALL_${state.currentTab}_${timestamp}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+
+    } catch (error) {
+        console.error('Export all error:', error);
+        alert('Lỗi khi xuất dữ liệu: ' + (error.message || 'Không xác định'));
+    } finally {
+        $('loading-overlay').classList.add('hidden');
+    }
+}
 
 // Fetch Categories
 async function fetchCategories() {
@@ -805,6 +1251,33 @@ function init() {
         if (state.hasSearched) performSearch();
     });
 
+    $('sort-select').addEventListener('change', (e) => {
+        state.sortOrder = e.target.value;
+        if (state.sortOrder === 'price-asc') {
+            state.sortCol = 'donGia';
+            state.sortDir = 'asc';
+        } else if (state.sortOrder === 'price-desc') {
+            state.sortCol = 'donGia';
+            state.sortDir = 'desc';
+        } else {
+            state.sortCol = '';
+            state.sortDir = '';
+        }
+        if (state.originalResults.length > 0) {
+            applyTableFiltersAndSort();
+        } else {
+            renderTableHeaders();
+        }
+    });
+
+    // Close column filter popover when clicking outside or scrolling table
+    const colPop = $('col-filter-popover');
+    if (colPop) {
+        colPop.addEventListener('click', (e) => e.stopPropagation());
+        document.addEventListener('click', () => closeColumnFilterPopover());
+    }
+    $('table-wrapper')?.addEventListener('scroll', () => closeColumnFilterPopover());
+
     // Initialize Flatpickr Datepicker safely
     if (typeof flatpickr !== 'undefined') {
         try {
@@ -834,7 +1307,31 @@ function init() {
         }
     }
 
-    $('btn-export-excel')?.addEventListener('click', exportToExcel);
+    // Excel dropdown toggle
+    const excelToggle = $('btn-excel-toggle');
+    const excelMenu = $('excel-dropdown-menu');
+    if (excelToggle && excelMenu) {
+        excelToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            excelMenu.classList.toggle('hidden');
+        });
+        // Close on click outside
+        document.addEventListener('click', () => {
+            excelMenu.classList.add('hidden');
+        });
+        excelMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    $('btn-export-excel')?.addEventListener('click', () => {
+        excelMenu.classList.add('hidden');
+        exportToExcel();
+    });
+    $('btn-export-all')?.addEventListener('click', () => {
+        excelMenu.classList.add('hidden');
+        exportAllToExcel();
+    });
 
     $('search-keyword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {

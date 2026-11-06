@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -161,22 +161,33 @@
                     <span>Tổng số: </span><strong id="total-results">0</strong>
                 </div>
                 <div class="stats-bar__item stats-bar__controls">
-                    <button id="btn-export-excel" class="btn btn--excel">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        <span>Xuất Excel (.xlsx)</span>
-                    </button>
+                    <select id="sort-select" class="form-select sort-select">
+                        <option value="">🕐 Mặc định</option>
+                        <option value="price-asc">📉 Giá thấp nhất</option>
+                        <option value="price-desc">📈 Giá cao nhất</option>
+                    </select>
                     <select id="page-size-select" class="form-select page-size-select">
                         <option value="10">10/trang</option>
                         <option value="20" selected>20/trang</option>
                         <option value="50">50/trang</option>
                         <option value="100">100/trang</option>
                     </select>
+                    <div class="excel-dropdown">
+                        <button id="btn-excel-toggle" class="btn btn--excel">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            <span>Tải Excel ▾</span>
+                        </button>
+                        <div id="excel-dropdown-menu" class="excel-dropdown__menu hidden">
+                            <button id="btn-export-excel" class="excel-dropdown__item">📄 Tải trang này</button>
+                            <button id="btn-export-all" class="excel-dropdown__item">📋 Tải tất cả</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -190,6 +201,8 @@
                     </tbody>
                 </table>
             </div>
+
+            <div id="col-filter-popover" class="col-filter-popover hidden"></div>
 
             <div id="results-cards" class="cards-container">
                 <!-- Mobile cards generated here -->
