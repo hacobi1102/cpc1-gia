@@ -1,0 +1,2 @@
+# Project uses only Python Standard Library (http.server, urllib, ssl, json, os, sys)
+# No third-party packages required.

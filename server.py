@@ -124,41 +124,36 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(response_data)
 
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            # Client đã đóng kết nối sớm (đóng tab, hủy request)
+            return
+
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8', errors='replace')
-            self.send_response(e.code)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'error': True,
-                'status': e.code,
-                'message': f'Server trả về lỗi {e.code}',
-                'detail': error_body[:500]
-            }).encode('utf-8'))
+            self._send_json_error(e.code, f'Server trả về lỗi {e.code}', error_body[:500])
 
         except urllib.error.URLError as e:
             print(f"  [ERROR] URLError: {e.reason}")
-            self.send_response(502)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'error': True,
-                'status': 502,
-                'message': 'Không thể kết nối đến muasamcong.mpi.gov.vn',
-                'detail': str(e.reason)
-            }).encode('utf-8'))
+            self._send_json_error(502, 'Không thể kết nối đến muasamcong.mpi.gov.vn', str(e.reason))
 
         except Exception as e:
             print(f"  [ERROR] Exception: {e}")
-            self.send_response(500)
+            self._send_json_error(500, 'Lỗi proxy server', str(e))
+
+    def _send_json_error(self, status_code, message, detail):
+        """Gửi lỗi JSON về client, bỏ qua nếu client đã ngắt kết nối"""
+        try:
+            self.send_response(status_code)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({
                 'error': True,
-                'status': 500,
-                'message': 'Lỗi proxy server',
-                'detail': str(e)
+                'status': status_code,
+                'message': message,
+                'detail': detail
             }).encode('utf-8'))
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            return
 
     def log_message(self, format, *args):
         """Custom log format"""
@@ -167,6 +162,10 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
             print(f"  [PROXY]  {args[0]}")
         else:
             print(f"  [STATIC] {args[0]}")
+
+
+class QuietThreadingHTTPServer(http.server.ThreadingHTTPServer):
+    """ThreadingHTTPServer chặn log lỗi ngắt kết nối sớm từ trình duyệt"""
 
     def handle_error(self, request, client_address):
         """Suppress harmless connection errors (browser closed tab/navigated away)"""
@@ -186,7 +185,7 @@ def main():
     print("=" * 56)
     print("  Nhan Ctrl+C de dung server\n")
 
-    server = http.server.ThreadingHTTPServer(('', PORT), ProxyHandler)
+    server = QuietThreadingHTTPServer(('', PORT), ProxyHandler)
     
     try:
         server.serve_forever()
